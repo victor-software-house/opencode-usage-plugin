@@ -12,15 +12,24 @@ export function formatCopilotSnapshot(snapshot: UsageSnapshot): string[] {
 
   const lines = ["→ [GITHUB] Copilot"]
   const reset = copilot.resetTime ? formatResetSuffixISO(copilot.resetTime) : ""
-  const total = copilot.total === -1 ? "∞" : copilot.total.toString()
-  
-  lines.push(`  ${"Chat:".padEnd(13)} ${formatBar(copilot.percentRemaining)} ${copilot.used}/${total}${reset}`)
+  const limitValue = copilot.limit === -1 ? -1 : Math.max(0, Math.floor(copilot.limit))
+  const chatValue = limitValue === -1
+    ? Math.max(0, Math.floor(copilot.remaining))
+    : Math.max(0, Math.min(Math.floor(copilot.remaining), limitValue))
+  const limit = limitValue === -1 ? "∞" : limitValue.toString()
+  const chatPct = Math.max(0, Math.min(100, Math.round(copilot.percentRemaining)))
 
-  if (copilot.completionsUsed !== undefined && copilot.completionsTotal !== undefined) {
-    const pct = copilot.completionsTotal > 0 
-      ? Math.round((copilot.completionsUsed / copilot.completionsTotal) * 100) 
+  lines.push(`  ${"Chat:".padEnd(13)} ${formatBar(chatPct)} ${chatValue}/${limit}${reset}`)
+
+  if (copilot.completionsRemaining !== undefined && copilot.completionsLimit !== undefined) {
+    const completionsLimit = Math.max(0, Math.floor(copilot.completionsLimit))
+    const completionsRemaining = completionsLimit > 0
+      ? Math.max(0, Math.min(Math.floor(copilot.completionsRemaining), completionsLimit))
+      : Math.max(0, Math.floor(copilot.completionsRemaining))
+    const pct = completionsLimit > 0
+      ? Math.round((completionsRemaining / completionsLimit) * 100)
       : 0
-    lines.push(`  ${"Completions:".padEnd(13)} ${formatBar(pct)} ${copilot.completionsUsed}/${copilot.completionsTotal}`)
+    lines.push(`  ${"Completions:".padEnd(13)} ${formatBar(pct)} ${completionsRemaining}/${completionsLimit}`)
   }
 
   return lines

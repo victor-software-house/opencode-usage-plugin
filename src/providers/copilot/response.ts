@@ -36,29 +36,39 @@ export interface BillingUsageResponse {
   usageItems: BillingUsageItem[]
 }
 
+function clampNonNegativeCount(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.floor(value))
+}
+
+function clampPercent(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.min(100, Math.round(value)))
+}
+
 export function toCopilotQuotaFromInternal(data: CopilotInternalUserResponse): CopilotQuota | null {
   if (data.limited_user_quotas) {
     const chatRemainingRaw = data.limited_user_quotas.chat ?? 0
     const chatTotalRaw = data.monthly_quotas?.chat ?? 0
     
     const chatScale = chatTotalRaw === 500 ? 10 : 1
-    const chatRemaining = Math.floor(chatRemainingRaw / chatScale)
-    const chatTotal = Math.floor(chatTotalRaw / chatScale)
+    const chatRemaining = clampNonNegativeCount(chatRemainingRaw / chatScale)
+    const chatTotal = clampNonNegativeCount(chatTotalRaw / chatScale)
 
     const completionsRemainingRaw = data.limited_user_quotas.completions ?? 0
     const completionsTotalRaw = data.monthly_quotas?.completions ?? 2000
     
     const compScale = completionsTotalRaw === 4000 ? 2 : 1
-    const completionsRemaining = Math.floor(completionsRemainingRaw / compScale)
-    const completionsTotal = Math.floor(completionsTotalRaw / compScale)
+    const completionsRemaining = clampNonNegativeCount(completionsRemainingRaw / compScale)
+    const completionsTotal = clampNonNegativeCount(completionsTotalRaw / compScale)
 
     return {
-      used: chatRemaining,
-      total: chatTotal,
-      percentRemaining: chatTotal > 0 ? Math.round((chatRemaining / chatTotal) * 100) : 0,
+      remaining: chatRemaining,
+      limit: chatTotal,
+      percentRemaining: chatTotal > 0 ? clampPercent((chatRemaining / chatTotal) * 100) : 0,
       resetTime: data.limited_user_reset_date || data.quota_reset_date,
-      completionsUsed: completionsRemaining,
-      completionsTotal,
+      completionsRemaining,
+      completionsLimit: completionsTotal,
     }
   }
 
@@ -68,13 +78,13 @@ export function toCopilotQuotaFromInternal(data: CopilotInternalUserResponse): C
     const remainingRaw = premium.remaining
     
     const scaleFactor = totalRaw === 500 ? 10 : 1
-    const chatRemaining = totalRaw === -1 ? -1 : Math.floor(remainingRaw / scaleFactor)
-    const chatTotal = totalRaw === -1 ? -1 : Math.floor(totalRaw / scaleFactor)
+    const chatRemaining = totalRaw === -1 ? 0 : clampNonNegativeCount(remainingRaw / scaleFactor)
+    const chatTotal = totalRaw === -1 ? -1 : clampNonNegativeCount(totalRaw / scaleFactor)
 
     return {
-      used: chatRemaining,
-      total: chatTotal,
-      percentRemaining: Math.round(premium.percent_remaining),
+      remaining: chatRemaining,
+      limit: chatTotal,
+      percentRemaining: clampPercent(premium.percent_remaining),
       resetTime: data.quota_reset_date,
     }
   }
@@ -86,16 +96,17 @@ export function toCopilotQuotaFromBilling(
   data: BillingUsageResponse,
   limit: number,
 ): CopilotQuota {
+  const normalizedLimit = clampNonNegativeCount(limit)
   const items = Array.isArray(data.usageItems) ? data.usageItems : []
-  const used = items
+  const used = clampNonNegativeCount(items
     .filter((i) => i.sku === "Copilot Premium Request" || i.sku.includes("Premium"))
-    .reduce((sum, i) => sum + (i.grossQuantity || 0), 0)
-  const remaining = Math.max(0, limit - used)
+    .reduce((sum, i) => sum + (i.grossQuantity || 0), 0))
+  const remaining = Math.max(0, normalizedLimit - used)
 
   return {
-    used,
-    total: limit,
-    percentRemaining: Math.round((remaining / limit) * 100),
+    remaining,
+    limit: normalizedLimit,
+    percentRemaining: normalizedLimit > 0 ? clampPercent((remaining / normalizedLimit) * 100) : 0,
     resetTime: new Date(
       Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1),
     ).toISOString(),

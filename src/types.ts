@@ -36,12 +36,12 @@ export interface CreditsSnapshot {
 }
 
 export interface CopilotQuota {
-  used: number
-  total: number
+  remaining: number
+  limit: number
   percentRemaining: number
   resetTime?: string | null
-  completionsUsed?: number
-  completionsTotal?: number
+  completionsRemaining?: number
+  completionsLimit?: number
 }
 
 export interface ProxyQuotaGroup {
