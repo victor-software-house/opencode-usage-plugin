@@ -1,7 +1,5 @@
 import { existsSync } from "fs"
 import { readFile } from "fs/promises"
-import { homedir } from "os"
-import { join } from "path"
 import { getAuthFilePath } from "../../utils/paths.js"
 
 export interface GeminiAuthData {
@@ -13,22 +11,17 @@ export interface GeminiAuthData {
 }
 
 /**
- * Reads Gemini OAuth credentials from all known sources, in priority order:
+ * Reads Gemini OAuth credentials from opencode auth.json.
  *
- * 1. opencode auth.json "google" key (type=oauth) — set by opencode-gemini-auth plugin
- * 2. ~/.gemini/oauth_creds.json — set by Gemini CLI
+ * Returns null if:
+ * - auth.json doesn't exist
+ * - google entry is missing or type !== "oauth" (i.e. user configured an API key)
  *
- * Both store a refresh token that works with the GCA OAuth client credentials.
- * The access token from source 2 may be expired; the provider will refresh it.
+ * When type is "api", the opencode-gemini-auth plugin returns null from its loader
+ * and opencode falls back to the API key against generativelanguage.googleapis.com.
+ * That quota is not queryable without Cloud Monitoring, so we show nothing.
  */
 export async function readGeminiAuth(): Promise<GeminiAuthData | null> {
-  return (await readOpencodeGeminiAuth()) ?? (await readGeminiCliAuth())
-}
-
-/**
- * Reads from opencode auth.json "google" key (requires opencode-gemini-auth OAuth login).
- */
-async function readOpencodeGeminiAuth(): Promise<GeminiAuthData | null> {
   try {
     const authPath = getAuthFilePath()
     if (!existsSync(authPath)) return null
@@ -48,35 +41,6 @@ async function readOpencodeGeminiAuth(): Promise<GeminiAuthData | null> {
       expires: google.expires ?? 0,
       projectId: projectId || undefined,
       managedProjectId: managedProjectId || undefined,
-    }
-  } catch {
-    return null
-  }
-}
-
-/**
- * Reads from ~/.gemini/oauth_creds.json — set by the Gemini CLI (gemini auth login).
- * Format: { access_token, refresh_token, expiry_date (ms), token_type, scope }
- * The client_id field is absent; we use the known GCA app credentials to refresh.
- */
-async function readGeminiCliAuth(): Promise<GeminiAuthData | null> {
-  try {
-    const credsPath = join(homedir(), ".gemini", "oauth_creds.json")
-    if (!existsSync(credsPath)) return null
-
-    const content = await readFile(credsPath, "utf-8")
-    const creds = JSON.parse(content)
-
-    const access: string = creds.access_token ?? ""
-    const refresh: string = creds.refresh_token ?? ""
-    if (!refresh) return null
-
-    const expiryDate: number = typeof creds.expiry_date === "number" ? creds.expiry_date : 0
-
-    return {
-      access,
-      refresh,
-      expires: expiryDate,
     }
   } catch {
     return null
