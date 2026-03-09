@@ -1,5 +1,5 @@
 {
-  "name": "@howaboua/opencode-usage-plugin",
+  "name": "@victor-software-house/opencode-usage-plugin",
   "version": "0.1.11",
   "description": "opencode plugin for tracking AI provider usage, rate limits, and quotas",
   "type": "module",
@@ -36,6 +36,7 @@
     "release:dev": "npm version prerelease --preid dev && npm publish --tag dev"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
   }
 }
