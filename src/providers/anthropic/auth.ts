@@ -6,12 +6,7 @@ import { getAuthFilePath } from "../../utils/paths.js"
 import { type AnthropicAuthData } from "./types.js"
 
 export async function readAnthropicAuth(): Promise<AnthropicAuthData | null> {
-  // 1. Check environment variable
-  if (process.env.CLAUDE_CODE_OAUTH_TOKEN) {
-    return { access: process.env.CLAUDE_CODE_OAUTH_TOKEN }
-  }
-
-  // 2. Check opencode auth.json
+  // 1. Check opencode auth.json (authoritative — managed by opencode's own auth flow)
   try {
     const authPath = getAuthFilePath()
     if (existsSync(authPath)) {
@@ -24,7 +19,7 @@ export async function readAnthropicAuth(): Promise<AnthropicAuthData | null> {
     }
   } catch {}
 
-  // 3. Check ~/.claude/credentials.json (Claude Code)
+  // 2. Check ~/.claude/credentials.json (Claude Code desktop app credentials)
   try {
     const claudePath = join(homedir(), ".claude", "credentials.json")
     if (existsSync(claudePath)) {
@@ -40,6 +35,12 @@ export async function readAnthropicAuth(): Promise<AnthropicAuthData | null> {
       }
     }
   } catch {}
+
+  // 3. Fall back to environment variable (may hold a stale or mismatched token
+  //    when set globally — opencode auth.json is preferred above)
+  if (process.env.CLAUDE_CODE_OAUTH_TOKEN) {
+    return { access: process.env.CLAUDE_CODE_OAUTH_TOKEN }
+  }
 
   return null
 }
