@@ -47,7 +47,8 @@ export async function loadUsageConfig(): Promise<UsageConfig> {
     "copilot": true,
     "zai": true,
     "anthropic": true,
-    "openrouter": true
+    "openrouter": true,
+    "gemini": true
   }
 }
 `
@@ -64,6 +65,7 @@ export async function loadUsageConfig(): Promise<UsageConfig> {
         zai: true,
         anthropic: true,
         openrouter: true,
+        gemini: true,
       },
     }
 

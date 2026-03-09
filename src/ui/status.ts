@@ -11,6 +11,7 @@ import { formatCopilotSnapshot } from "./formatters/copilot"
 import { formatZaiSnapshot } from "./formatters/zai"
 import { formatOpenRouterSnapshot } from "./formatters/openrouter"
 import { formatAnthropicSnapshot } from "./formatters/anthropic"
+import { formatGeminiSnapshot } from "./formatters/gemini"
 import { formatBar, formatResetSuffix, formatMissingSnapshot } from "./formatters/shared"
 
 type UsageClient = PluginInput["client"]
@@ -48,7 +49,7 @@ function formatSnapshot(snapshot: UsageSnapshot): string[] {
   if (snapshot.provider === "zai-coding-plan") return formatZaiSnapshot(snapshot)
   if (snapshot.provider === "openrouter") return formatOpenRouterSnapshot(snapshot)
   if (snapshot.provider === "anthropic") return formatAnthropicSnapshot(snapshot)
-  if (snapshot.provider === "openrouter") return formatOpenRouterSnapshot(snapshot)
+  if (snapshot.provider === "google") return formatGeminiSnapshot(snapshot)
 
   const plan = snapshot.planType ? ` (${snapshot.planType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())})` : ""
   const lines = [`→ [${snapshot.provider.toUpperCase()}]${plan}`]

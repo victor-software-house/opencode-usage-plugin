@@ -29,7 +29,7 @@ export function commandHooks(options: {
       config.command ??= {}
       config.command["usage"] = {
         template: "/usage",
-        description: "Show API usage and rate limits (anthropic/codex/proxy/copilot/zai)",
+        description: "Show API usage and rate limits (anthropic/codex/gemini/copilot/zai/openrouter/proxy)",
       }
     },
 

@@ -81,6 +81,7 @@ export interface UsageConfig {
     zai?: boolean
     openrouter?: boolean
     anthropic?: boolean
+    gemini?: boolean
   }
   modelGroups?: {
     showAll?: boolean
@@ -131,6 +132,19 @@ export interface AnthropicQuota {
   } | null
 }
 
+export interface GeminiQuotaBucket {
+  modelId?: string
+  tokenType?: string
+  remainingAmount?: string
+  remainingFraction?: number
+  resetTime?: string
+}
+
+export interface GeminiQuota {
+  projectId: string
+  buckets: GeminiQuotaBucket[]
+}
+
 export interface OpenRouterQuota {
   limit: number | null
   usage: number
@@ -154,6 +168,7 @@ export interface UsageSnapshot {
   zaiQuota?: ZaiQuota
   openrouterQuota?: OpenRouterQuota
   anthropicQuota?: AnthropicQuota
+  geminiQuota?: GeminiQuota
   updatedAt: number
   isMissing?: boolean
   missingReason?: string

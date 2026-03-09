@@ -9,7 +9,7 @@ import { loadUsageConfig } from "./config"
 import { loadMergedAuths } from "./auth/loader"
 import { resolveProviderAuths } from "./registry"
 
-const CORE_PROVIDERS = ["codex", "proxy", "copilot", "zai-coding-plan", "anthropic", "openrouter"]
+const CORE_PROVIDERS = ["codex", "proxy", "copilot", "zai-coding-plan", "anthropic", "openrouter", "google"]
 
 export async function fetchUsageSnapshots(filter?: string): Promise<UsageSnapshot[]> {
   const target = resolveFilter(filter)
@@ -20,6 +20,7 @@ export async function fetchUsageSnapshots(filter?: string): Promise<UsageSnapsho
     if (id === "codex") return toggles.openai !== false
     if (id === "zai-coding-plan") return toggles.zai !== false
     if (id === "openrouter") return toggles.openrouter !== false
+    if (id === "google") return toggles.gemini !== false
     return (toggles as Record<string, boolean>)[id] !== false
   }
 
@@ -38,8 +39,8 @@ export async function fetchUsageSnapshots(filter?: string): Promise<UsageSnapsho
       }
     })
 
-  // Handle special/default fetches
-  for (const id of ["proxy", "copilot", "anthropic"]) {
+  // Handle special/default fetches (providers that don't need auth from loadMergedAuths)
+  for (const id of ["proxy", "copilot", "anthropic", "google"]) {
     if ((!target || target === id) && isEnabled(id) && !fetched.has(id)) {
       const provider = providers[id]
       if (provider?.fetchUsage) {
@@ -61,11 +62,12 @@ export async function fetchUsageSnapshots(filter?: string): Promise<UsageSnapsho
 function resolveFilter(f?: string): string | undefined {
   const aliases: Record<string, string> = {
     codex: "codex", openai: "codex", gpt: "codex",
-    proxy: "proxy", agy: "proxy", gemini: "proxy",
+    proxy: "proxy", agy: "proxy",
     copilot: "copilot", github: "copilot",
     zai: "zai-coding-plan", glm: "zai-coding-plan",
     anthropic: "anthropic", claude: "anthropic",
     openrouter: "openrouter", or: "openrouter",
+    gemini: "google", google: "google", gca: "google",
   }
   return f ? aliases[f.toLowerCase().trim()] : undefined
 }
